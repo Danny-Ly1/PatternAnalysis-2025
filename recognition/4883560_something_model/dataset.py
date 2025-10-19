@@ -14,13 +14,14 @@ metadata_path = "/home/Student/s4883560/project/isic_metadata/train-metadata.csv
 
 # Load metadata
 df = pd.read_csv(metadata_path)
-# Assuming CSV has columns: image_id, target (0=normal,1=melanoma)
 df['image_path'] = df['isic_id'].apply(lambda x: os.path.join(image_dir, f"{x}.jpg"))
 
 # Split
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['target'], random_state=42)
+train_df, val_df = train_test_split(train_df, test_size=0.05, stratify=train_df['target'], random_state=42)
 
 print("Train dataset size:", len(train_df))
+print("Validation dataset size:", len(val_df))
 print("Test dataset size:", len(test_df))
 
 # Dataset
