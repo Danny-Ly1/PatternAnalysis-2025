@@ -8,35 +8,37 @@ from torchvision import models
 
 class SiameseNetwork(nn.Module):
     def __init__(self):
-        super(SiameseNetwork, self).__init__()
+        super().__init__()
         base = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
-        base.fc = nn.Identity()  # remove classifier
+        for param in base.parameters():
+            param.requires_grad = False
+        for param in base.layer3.parameters():
+            param.requires_grad = True
+        for param in base.layer4.parameters():
+            param.requires_grad = True
+
+        base.fc = nn.Identity()
         self.feature_extractor = base
-        self.embedding = nn.Sequential(
-            nn.Linear(2048, 512),
+
+        self.fc = nn.Sequential(
+            nn.Linear(2048 * 2 + 1, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Linear(512, 128)
+            nn.Dropout(0.3),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 1)
         )
 
     def forward_once(self, x):
-        x = self.feature_extractor(x)
-        x = self.embedding(x)
-        return x
+        return self.feature_extractor(x)
 
     def forward(self, x1, x2):
-        out1 = self.forward_once(x1)
-        out2 = self.forward_once(x2)
-        return out1, out2
-
-class ContrastiveLoss(nn.Module):
-    def __init__(self, margin=2.0):
-        super(ContrastiveLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, out1, out2, label):
-        dist = F.pairwise_distance(out1, out2)
-        loss = torch.mean(
-            label * torch.pow(dist, 2) +
-            (1 - label) * torch.pow(torch.clamp(self.margin - dist, min=0.0), 2)
-        )
-        return loss
+        f1 = self.forward_once(x1)
+        f2 = self.forward_once(x2)
+        cosine_sim = F.cosine_similarity(f1, f2).unsqueeze(1)
+        combined = torch.cat([f1, f2, cosine_sim], dim=1)
+        out = self.fc(combined)
+        return out
