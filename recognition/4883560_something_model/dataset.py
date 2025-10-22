@@ -18,10 +18,8 @@ df['image_path'] = df['isic_id'].apply(lambda x: os.path.join(image_dir, f"{x}.j
 
 # Split
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['target'], random_state=42)
-train_df, val_df = train_test_split(train_df, test_size=0.05, stratify=train_df['target'], random_state=42)
 
 print("Train dataset size:", len(train_df))
-print("Validation dataset size:", len(val_df))
 print("Test dataset size:", len(test_df))
 
 # Dataset
@@ -58,9 +56,11 @@ class SiameseISICDataset(Dataset):
 
 # Transforms
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
     transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(10),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(20),
+    transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225])
