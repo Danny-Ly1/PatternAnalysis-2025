@@ -1,8 +1,5 @@
 import torch.nn as nn
 import torch
-import torch.nn.functional as F
-
-
 from torchvision import models
 
 
@@ -24,6 +21,9 @@ class SiameseNetwork(nn.Module):
         x = self.backbone(x)
         x = self.head(x)
         return nn.functional.normalize(x, p=2, dim=1)
+    
+    def forward(self, x1, x2):
+        return self.forward_once(x1), self.forward_once(x2)
 
 
 class ContrastiveLoss(nn.Module):

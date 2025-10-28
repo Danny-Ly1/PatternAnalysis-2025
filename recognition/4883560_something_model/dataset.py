@@ -2,10 +2,7 @@ import os, random
 import pandas as pd
 from PIL import Image
 import torch
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, models
-import torch.nn.functional as F
+from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 # Paths
@@ -26,14 +23,15 @@ print("Test dataset size:", len(test_df))
 
 # Dataset
 class SiameseISICDataset(Dataset):
-    def __init__(self, df, transform=None):
+    def __init__(self, df, transform=None, pairs_per_epoch=8000):
         self.df = df.reset_index(drop=True)
         self.transform = transform
         self.classes = df["target"].unique()
         self.class_indices = {c: self.df[self.df["target"] == c].index.tolist() for c in self.classes}
+        self.pairs_per_epoch = pairs_per_epoch
 
     def __len__(self):
-        return len(self.df)
+        return self.pairs_per_epoch
 
     def __getitem__(self, idx):
         label = random.randint(0, 1)
