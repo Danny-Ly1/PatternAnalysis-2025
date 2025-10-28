@@ -1,70 +1,91 @@
 from dataset import *
 from modules import *
+import torch, torch.nn as nn, torch.optim as optim
+from sklearn.metrics import roc_curve
 
+train_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.ColorJitter(0.2, 0.2, 0.2, 0.05),
+    transforms.RandomRotation(10),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
+])
 
-train_dataset = SiameseISICDataset(train_df, transform)
-test_dataset  = SiameseISICDataset(test_df, transform)
+test_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
+])
 
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=1)
-test_loader  = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=1)
+train_loader = DataLoader(SiameseISICDataset(train_df, train_transform), batch_size=32, shuffle=True)
+val_loader = DataLoader(SiameseISICDataset(val_df, test_transform), batch_size=32)
+test_loader = DataLoader(SiameseISICDataset(test_df, test_transform), batch_size=32)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SiameseNetwork().to(device)
-criterion = nn.BCEWithLogitsLoss()
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, weight_decay=1e-5)
-
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+criterion = ContrastiveLoss(margin=1.0)
+optimizer = optim.Adam(model.parameters(), lr=1e-5, weight_decay=1e-4)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-6)
 
 num_epochs = 20
-best_acc = 0.0
-best_thresh = 0.98
+best_val_acc = 0
 
-# ==============================
-#  Training Loop
-# ==============================
+def evaluate(model, loader):
+    model.eval()
+    total_loss, all_dist, all_labels = 0.0, [], []
+    with torch.no_grad():
+        for (img1, img2), labels in loader:
+            img1, img2, labels = img1.to(device), img2.to(device), labels.to(device)
+            emb1, emb2 = model(img1, img2)
+            loss = criterion(emb1, emb2, labels)
+            total_loss += loss.item() * labels.size(0)
+            dist = nn.functional.pairwise_distance(emb1, emb2)
+            all_dist.append(dist.cpu())
+            all_labels.append(labels.cpu())
+    all_dist = torch.cat(all_dist)
+    all_labels = torch.cat(all_labels)
+    fpr, tpr, thresh = roc_curve(all_labels, -all_dist)
+    best_idx = (tpr - fpr).argmax()
+    best_thresh = thresh[best_idx]
+    preds = (all_dist < -best_thresh).float()
+    acc = (preds == all_labels).float().mean().item() * 100
+    avg_loss = total_loss / len(loader.dataset)
+    return avg_loss, acc, best_thresh
+
 for epoch in range(num_epochs):
     model.train()
-    running_loss = 0.0
-    correct = 0
-    total = 0
-
-    for img1, img2, labels in train_loader:
+    total_loss, all_dist, all_labels = 0, [], []
+    for (img1, img2), labels in train_loader:
         img1, img2, labels = img1.to(device), img2.to(device), labels.to(device)
         optimizer.zero_grad()
-        outputs = model(img1, img2)
-        loss = criterion(outputs, labels)
+        emb1, emb2 = model(img1, img2)
+        loss = criterion(emb1, emb2, labels)
         loss.backward()
         optimizer.step()
+        total_loss += loss.item() * labels.size(0)
+        dist = nn.functional.pairwise_distance(emb1, emb2)
+        all_dist.append(dist.detach().cpu())
+        all_labels.append(labels.cpu())
 
-        running_loss += loss.item() * labels.size(0)
-        preds = (torch.sigmoid(outputs) >= best_thresh).float()
-        correct += (preds == labels).sum().item()
-        total += labels.size(0)
+    # Compute train metrics
+    all_dist = torch.cat(all_dist)
+    all_labels = torch.cat(all_labels)
+    fpr, tpr, thresh = roc_curve(all_labels, -all_dist)
+    best_idx = (tpr - fpr).argmax()
+    train_thresh = thresh[best_idx]
+    train_preds = (all_dist < -train_thresh).float()
+    train_acc = (train_preds == all_labels).float().mean().item() * 100
+    train_loss = total_loss / len(train_loader.dataset)
 
-    train_loss = running_loss / total
-    train_acc = correct / total * 100
+    # Validation
+    val_loss, val_acc, best_thresh = evaluate(model, val_loader)
 
-    # Test evaluation
-    model.eval()
-    test_correct = 0
-    test_total = 0
-    test_loss = 0.0
-    with torch.no_grad():
-        for img1, img2, labels in test_loader:
-            img1, img2, labels = img1.to(device), img2.to(device), labels.to(device)
-            outputs = model(img1, img2)
-            loss = criterion(outputs, labels)
-            test_loss += loss.item() * labels.size(0)
-            preds = (torch.sigmoid(outputs) >= best_thresh).float()
-            test_correct += (preds == labels).sum().item()
-            test_total += labels.size(0)
-
-    test_loss /= test_total
-    test_acc = test_correct / test_total * 100
-
-    print(f"Epoch [{epoch+1}/{num_epochs}] "
-          f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% "
-          f"| Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%")
-
-    # Step LR scheduler
     scheduler.step()
+
+    print(f"Epoch [{epoch+1}/20] "
+          f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | "
+          f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%")
