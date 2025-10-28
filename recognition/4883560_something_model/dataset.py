@@ -17,9 +17,11 @@ df = pd.read_csv(metadata_path)
 df['image_path'] = df['isic_id'].apply(lambda x: os.path.join(image_dir, f"{x}.jpg"))
 
 # Split
-train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['target'], random_state=42)
+train_df, temp_df = train_test_split(df, test_size=0.3, stratify=df['target'], random_state=42)
+val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=temp_df['target'], random_state=42)
 
 print("Train dataset size:", len(train_df))
+print("Validation dataset size;", len(val_df))
 print("Test dataset size:", len(test_df))
 
 # Dataset
