@@ -34,34 +34,20 @@ class SiameseISICDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        img1_path, label1 = self.df.loc[idx, ["image_path", "target"]]
-        should_get_same = random.randint(0, 1)
-
-        if should_get_same:
-            idx2 = random.choice(self.class_indices[int(label1)])
+        label = random.randint(0, 1)
+        if label == 1:
+            c = random.choice(self.classes)
+            i1, i2 = random.sample(self.class_indices[c], 2)
         else:
-            diff_label = 1 - label1
-            idx2 = random.choice(self.class_indices[int(diff_label)])
+            c1, c2 = random.sample(list(self.classes), 2)
+            i1 = random.choice(self.class_indices[c1])
+            i2 = random.choice(self.class_indices[c2])
 
-        img2_path, label2 = self.df.loc[idx2, ["image_path", "target"]]
-        img1 = Image.open(img1_path).convert("RGB")
-        img2 = Image.open(img2_path).convert("RGB")
+        img1 = Image.open(self.df.loc[i1, "image_path"]).convert("RGB")
+        img2 = Image.open(self.df.loc[i2, "image_path"]).convert("RGB")
 
         if self.transform:
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
-        label = torch.tensor([1 if label1 == label2 else 0], dtype=torch.float32)
-        return img1, img2, label
-
-# Transforms
-transform = transforms.Compose([
-    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
-    transforms.RandomRotation(20),
-    transforms.ColorJitter(0.2, 0.2, 0.2, 0.2),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
-])
+        return (img1, img2), torch.tensor(float(label))
