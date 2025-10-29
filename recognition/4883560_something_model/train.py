@@ -117,6 +117,8 @@ def train_loop():
     )
     print(f"Training history and best threshold saved to {HISTORY_SAVE_PATH}")
 
+    get_train_val_plot()
+
 def plot_metrics(train_metrics, val_metrics, metric_name, title, filename):
     plt.figure(figsize=(8, 5))
     epochs = range(1, len(train_metrics) + 1)
@@ -135,17 +137,13 @@ def plot_metrics(train_metrics, val_metrics, metric_name, title, filename):
 
 def get_train_val_plot():
     history_data = np.load(HISTORY_SAVE_PATH)
-    train_losses = history_data['train_losses'].item()
-    val_losses = history_data['val_losses'].item()
-    train_accs = history_data['train_accs'].item()
-    val_accs = history_data['val_accs'].item()
-    train_aucs = history_data['train_aucs'].item()
-    val_aucs = history_data['val_aucs'].item()
+    train_losses = history_data['train_losses']
+    val_losses = history_data['val_losses']
+    train_accs = history_data['train_accs']
+    val_accs = history_data['val_accs']
+    train_aucs = history_data['train_aucs']
+    val_aucs = history_data['val_aucs']
 
     plot_metrics(train_losses, val_losses, 'Loss', 'Training and Validation Loss over Epochs', 'loss_over_epochs.png')
     plot_metrics(train_accs, val_accs, 'Accuracy (%)', 'Training and Validation Accuracy over Epochs', 'accuracy_over_epochs.png')
     plot_metrics(train_aucs, val_aucs, 'AUC Score', 'Training and Validation AUC over Epochs', 'auc_over_epochs.png')
-
-if __name__ == '__main__':
-    train_loop()
-    get_train_val_plot()

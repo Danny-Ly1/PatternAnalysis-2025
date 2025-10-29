@@ -110,23 +110,58 @@ Follows the same hyperparameters (such as batch size and pairs per epochs) where
 
 ### Evaluation Figures
 The following figures will be created:
-1. Testing confusion matrix
+1. Testing Confusion Matrix
     - Demonstrates the performance against actual outcomes
-2. ROC curve
+2. Receiver Operating Characteristics Curve (ROC)
     - Demonstrates the trade-off between sensitivity and specificity
 
 
 ## Results
+### Raw Training and Validation Output
+![alt text](image-3.png)
+
+
+### Training Diagrams
+#### 1. Training and Validation Accuracy/Loss/AUC ROC Over Epochs
+![alt text](image-2.png)
+
+![alt text](image-4.png)
+
+![alt text](image-5.png)
+
+#### Training and Validation Discussion
+As seen in the raw output and diagrams, the training and validation curve followed the same pattern in the early epochs which indicates little overfitting and the model is learning well. However, after the 6-7th epoch, the training and validation trends begin diverging. This is likely due to overfitting with the model memorising the dataset rather than learning new features. Nonetheless, during evaluation, the best model (highest validation accuracy) will be used before the model began overfitting.
+
+### Evaluation Diagrams
+#### 1. Testing ROC Curve
+![alt text](image-6.png)
+
+A curve that follows the diagonal line indicates the model cannot distinguish the difference between classes confidently. As the image above shows the curve towards the corner with higher positive rates and low false positives, the model can confidently distinguish between benign and malignant images. However, this can certainly be improved upon as it doesn't fully reach the top-left corner of the diagram.
+
+#### 2. Testing Confusion Matrix
+
+
+
+
+#### Testing Discussion
+![alt text](image-7.png)
+Final Test Results:
+- `Loss = 0.3937`
+- `Accuracy = 81.60% `
+- `AUC = 0.8754`
+
+The overall evaluation of the model did exceed the desired accuracy of 0.8 as seen with the general accuracy metric and Area Under the ROC Curve (AUC) both being greater. 
 
 
 ## Dependencies and Setup
-- python:
-- torch: 
-- torchvision: 
-- sklearn:
-- numpy:
-- pandas
-- PIL: 
+- python: 3.13.7
+- torch: 2.7.1
+- torchvision: 0.22.1
+- sklearn: 1.7.2
+- numpy: 2.1.2
+- pandas: 2.3.3
+- matplotlib: 3.10.6
+- PIL: 11.0.0
 
 ## References
 - [1] Description of how a Siamese Network works. Available at: https://medium.com/@rinkinag24/a-comprehensive-guide-to-siamese-neural-networks-3358658c0513

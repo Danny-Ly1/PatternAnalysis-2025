@@ -1,5 +1,6 @@
 from dataset import get_data_loaders
 from modules import SiameseNetwork, ContrastiveLoss
+from train import train_loop
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,7 +51,7 @@ def predict():
 
 def plot_test_metrics(all_labels, all_probas, best_thresh):
     # --- 1. Confusion Matrix ---
-    test_preds = (all_probas < -best_thresh).astype(int) 
+    test_preds = (all_probas > best_thresh).astype(int) 
     cm = confusion_matrix(all_labels, test_preds)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     
@@ -79,3 +80,8 @@ def plot_test_metrics(all_labels, all_probas, best_thresh):
     plt.savefig('roc_curve.png')
     plt.close()
     print("Plot saved to: roc_curve.png")
+
+
+if __name__ == '__main__':
+    train_loop()
+    predict()
