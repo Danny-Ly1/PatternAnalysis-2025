@@ -2,7 +2,8 @@ import os, random
 import pandas as pd
 from PIL import Image
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
 from sklearn.model_selection import train_test_split
 
 # Paths
@@ -23,7 +24,7 @@ print("Test dataset size:", len(test_df))
 
 # Dataset
 class SiameseISICDataset(Dataset):
-    def __init__(self, df, transform=None, pairs_per_epoch=15000):
+    def __init__(self, df, transform, pairs_per_epoch):
         self.df = df.reset_index(drop=True)
         self.transform = transform
         self.classes = sorted(df["target"].unique().tolist())
@@ -61,3 +62,37 @@ class SiameseISICDataset(Dataset):
         if self.transform:
             img1, img2 = self.transform(img1), self.transform(img2)
         return (img1, img2), torch.tensor(float(label))
+
+def get_transforms():
+    train_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomRotation(20),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                            std=[0.229, 0.224, 0.225]),
+    ])
+
+    test_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                            std=[0.229, 0.224, 0.225]),
+    ])
+
+    return train_transform, test_transform
+    
+def get_data_loaders(batch_size = 32, pairs_per_epoch = 15000):
+    train_transform, test_transform = get_transforms()
+
+    train_dataset = SiameseISICDataset(train_df, train_transform, pairs_per_epoch)
+    validation_dataset = SiameseISICDataset(val_df, test_transform, pairs_per_epoch)
+    test_dataset = SiameseISICDataset(test_df, test_transform, pairs_per_epoch)
+
+    train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
+    validation_loader = DataLoader(validation_dataset, batch_size)
+    test_loader = DataLoader(test_dataset, batch_size)
+
+    return train_loader, validation_loader, test_loader
