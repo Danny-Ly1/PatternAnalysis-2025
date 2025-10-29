@@ -3,7 +3,6 @@
 **StudentID:** 48835606
 
 
-
 ## Introduction
 ### Problem Statement
 Melanoma is the most dangerous type of skin cancer, with the highest incidence rates in Australia and New Zealand. However, melanoma can usually be cured with surgery when identified in its early stages. So, this project aims to assist with quicker and more accurate detection of melanoma given an image of skin. 
@@ -89,25 +88,50 @@ Where:
 - $m$ is a margin value (ensures any dissimilar pairs greater will not contribute to the loss)
 
 
-## Training Process
+## Training Details
 ### Hyperparameters
-These hyperparameters were 
+These hyperparameters were used after extensive testing to result in the best outcome.
+- `Epochs` = 20 (to show model after its peak)
+- `Batch Size` = 32
+- `Pairs per epoch` = 15000
+- `Criterion` = Custom Contrastive Loss Function (with a margin of 1.5)
+- `Optimizer` = Adam (with a learning rate of 1e-5 and weight decay of 1e-4)
+- `Scheduler`= CosineAnnealingLR (with a max iteration count of 20 and min learning rate of 1e-6)
 
 
+### Training Process
+The best performing model (highest validation accuracy) will have its information saved on the path `best_siamese_model.pth`. This will be used when evaluating against new images.
 
-## Evaluation Process
+
+## Evaluation Details
+### Hyperparameters
+Follows the same hyperparameters (such as batch size and pairs per epochs) where applicable but copies most parameters from the best performing model from training.
+
+
+### Evaluation Figures
+The following figures will be created:
+1. Testing confusion matrix
+    - Demonstrates the performance against actual outcomes
+2. ROC curve
+    - Demonstrates the trade-off between sensitivity and specificity
 
 
 ## Results
 
 
 ## Dependencies and Setup
-
+- python:
+- torch: 
+- torchvision: 
+- sklearn:
+- numpy:
+- pandas
+- PIL: 
 
 ## References
 - [1] Description of how a Siamese Network works. Available at: https://medium.com/@rinkinag24/a-comprehensive-guide-to-siamese-neural-networks-3358658c0513
 - [2] Image of the basic structure of a Siamese Network. Available at: https://www.mdpi.com/2073-8994/10/9/385 
-- [3] Raw dataset. Available at: https://challenge2020.isic-archive.com/
+- [3] Raw dataset used. Available at: https://challenge2020.isic-archive.com/
 - [4] Dataset used. Available at: https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-224x224-resized
 - [5] Dataset splitting. Available at: https://wiki.cloudfactory.com/docs/mp-wiki/splits/data-splitting-in-machine-learning
 - [6] Weighted Random Sampling. Available at: https://www.researchgate.net/publication/47860855_Weighted_Random_Sampling_over_Data_Streams
