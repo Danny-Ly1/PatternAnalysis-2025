@@ -23,23 +23,35 @@ print("Test dataset size:", len(test_df))
 
 # Dataset
 class SiameseISICDataset(Dataset):
-    def __init__(self, df, transform=None, pairs_per_epoch=8000):
+    def __init__(self, df, transform=None, pairs_per_epoch=15000):
         self.df = df.reset_index(drop=True)
         self.transform = transform
-        self.classes = df["target"].unique()
+        self.classes = sorted(df["target"].unique().tolist())
         self.class_indices = {c: self.df[self.df["target"] == c].index.tolist() for c in self.classes}
         self.pairs_per_epoch = pairs_per_epoch
+
+        
+        class_counts = self.df['target'].value_counts()
+        self.class_weights = {c: 1.0 / count for c, count in class_counts.items()}
+        total_weight = sum(self.class_weights.values())
+        self.class_probabilities = [self.class_weights[c] / total_weight for c in self.classes]
 
     def __len__(self):
         return self.pairs_per_epoch
 
     def __getitem__(self, idx):
         label = random.randint(0, 1)
+        
         if label == 1:
-            c = random.choice(self.classes)
+            c = random.choices(self.classes, weights=self.class_probabilities, k=1)[0]
+            
+            if len(self.class_indices[c]) < 2:
+                c = random.choice(self.classes)
+            
             i1, i2 = random.sample(self.class_indices[c], 2)
+            
         else:
-            c1, c2 = random.sample(list(self.classes), 2)
+            c1, c2 = random.sample(self.classes, 2)
             i1 = random.choice(self.class_indices[c1])
             i2 = random.choice(self.class_indices[c2])
 
@@ -47,7 +59,5 @@ class SiameseISICDataset(Dataset):
         img2 = Image.open(self.df.loc[i2, "image_path"]).convert("RGB")
 
         if self.transform:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
-
+            img1, img2 = self.transform(img1), self.transform(img2)
         return (img1, img2), torch.tensor(float(label))

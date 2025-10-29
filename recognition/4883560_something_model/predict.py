@@ -1,6 +1,8 @@
 from modules import *
 from dataset import *
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, auc
+from torch.utils.data import DataLoader
+from torchvision import transforms
 
 test_transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -27,15 +29,19 @@ def evaluate(model, loader):
             dist = nn.functional.pairwise_distance(emb1, emb2)
             all_dist.append(dist.cpu())
             all_labels.append(labels.cpu())
+
     all_dist = torch.cat(all_dist)
     all_labels = torch.cat(all_labels)
+
     fpr, tpr, thresh = roc_curve(all_labels, -all_dist)
+    auc_score = auc(fpr, tpr)
+
     best_idx = (tpr - fpr).argmax()
     best_thresh = thresh[best_idx]
     preds = (all_dist < -best_thresh).float()
     acc = (preds == all_labels).float().mean().item() * 100
     avg_loss = total_loss / len(loader.dataset)
-    return avg_loss, acc, best_thresh
+    return avg_loss, acc, auc_score
 
-test_loss, test_acc, _ = evaluate(model, test_loader)
-print(f"\n Final Test Results: Loss = {test_loss:.4f} | Accuracy = {test_acc:.2f}%")
+test_loss, test_acc, test_auc = evaluate(model, test_loader)
+print(f"\n Final Test Results: Loss = {test_loss:.4f} | Accuracy = {test_acc:.2f}% | AUC = {test_auc:.4f}")

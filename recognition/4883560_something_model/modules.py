@@ -12,9 +12,9 @@ class SiameseNetwork(nn.Module):
         self.head = nn.Sequential(
             nn.Linear(2048, 512),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.6),
             nn.BatchNorm1d(512),
-            nn.Linear(512, 128)
+            nn.Linear(512, 64)
         )
 
     def forward_once(self, x):
@@ -27,7 +27,7 @@ class SiameseNetwork(nn.Module):
 
 
 class ContrastiveLoss(nn.Module):
-    def __init__(self, margin=1.0):
+    def __init__(self, margin=1.5):
         super().__init__()
         self.margin = margin
 
