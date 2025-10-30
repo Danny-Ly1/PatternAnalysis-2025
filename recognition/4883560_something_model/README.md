@@ -11,7 +11,7 @@ Melanoma is the most dangerous type of skin cancer, with the highest incidence r
 The algorithm that will be used to classify melanoma will be a Siamese Neural Network. A Siamese Network usually consists of two identical neural networks (that same the same weights and parameters) but are given two different inputs. These inputs each return an output vector (embedding) that represents the image. This embedding goes through a distance layer to measure the similarity between the two. The embeddings with small distances between them are usually from the same class and further distances signify different classes. 
 
 
-![alt text](1image.png)
+![alt text](assets/generic_siamese.png)
 
 
 
@@ -70,7 +70,7 @@ Data augmentation was used to reduce overfitting and help the model generalize f
 ### Siamese Network
 As discussed above, a Siamese network consists of two main components, the CNN model and the loss function. The CNN model used for this project is a ResNet-50 CNN (which can be seen below) that is pre-trained on ImageNet data to have a some basic image detailed already learnt. More information can be found here: https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html. This significantly reduces training time required, amount of data, and is a reliable base to build off [[8](#References)]. 
 
-<img src="image-11.png" width="300">
+<img src="assets/resnet_architecture.png" width="300">
 
 However, the ResNet-50 CNN is the backbone of the Siamese network and is modified to skip the classification process and instead return 2048-dimensional embedding instead. This embedding undergoes another block/head that will reduce the it to 64-dimensions. This is then normalized so that the embedding lies on a unit sphere so the distances can be measured.
 
@@ -118,37 +118,40 @@ The following figures will be created:
 
 ## Results
 ### Raw Training and Validation Output
-![alt text](image-3.png)
+![alt text](assets/raw_output.png)
 
 
 ### Training Diagrams
 #### 1. Training and Validation Accuracy/Loss/AUC ROC Over Epochs
-![alt text](image-2.png)
+![alt text](assets/training_val_accuracy.png)
 
-![alt text](image-4.png)
+![alt text](assets/training_val_loss.png)
 
-![alt text](image-5.png)
+![alt text](assets/training_val_auc.png)
+
 
 #### Training and Validation Discussion
 As seen in the raw output and diagrams, the training and validation curve followed the same pattern in the early epochs which indicates little overfitting and the model is learning well. However, after the 6-7th epoch, the training and validation trends begin diverging. This is likely due to overfitting with the model memorising the dataset rather than learning new features. Nonetheless, during evaluation, the best model (highest validation accuracy) will be used before the model began overfitting.
 
 ### Evaluation Diagrams
 #### 1. Testing ROC Curve
-![alt text](image-6.png)
+![alt text](assets/testing_roc_curve.png)
 
 A curve that follows the diagonal line indicates the model cannot distinguish the difference between classes confidently. As the image above shows the curve towards the corner with higher positive rates and low false positives, the model can confidently distinguish between benign and malignant images. However, this can certainly be improved upon as it doesn't fully reach the top-left corner of the diagram.
 
 #### 2. Testing Confusion Matrix
+![alt text](assets/testing_confusion_matrix.png)
 
+The confusion matrix shows how many images the model predicted correctly. The top-left tile represents the true negative and the bottom-right represents the true positive. Since the model detected more true positives and negatives than false positives and negatives, it shows that the model is performing well in classifying between the two classes.
 
 
 
 #### Testing Discussion
-![alt text](image-7.png)
+![alt text](assets/evaluation_output.png)
 Final Test Results:
-- `Loss = 0.3937`
-- `Accuracy = 81.60% `
-- `AUC = 0.8754`
+- `Loss = 0.3381`
+- `Accuracy = 81.73% `
+- `AUC = 0.8802`
 
 The overall evaluation of the model did exceed the desired accuracy of 0.8 as seen with the general accuracy metric and Area Under the ROC Curve (AUC) both being greater. 
 
@@ -163,11 +166,17 @@ The overall evaluation of the model did exceed the desired accuracy of 0.8 as se
 - matplotlib: 3.10.6
 - PIL: 11.0.0
 
+Although there will be variability when reproducing the results, here is the steps to run the model:
+1. Download the dataset and configure the `image_dir` and `metadata_path` to the downloaded path
+2. Ensure the proper dependencies are installed
+3. Run the predict file which will include the training loop
+
+
 ## References
 - [1] Description of how a Siamese Network works. Available at: https://medium.com/@rinkinag24/a-comprehensive-guide-to-siamese-neural-networks-3358658c0513
 - [2] Image of the basic structure of a Siamese Network. Available at: https://www.mdpi.com/2073-8994/10/9/385 
-- [3] Raw dataset used. Available at: https://challenge2020.isic-archive.com/
-- [4] Dataset used. Available at: https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-224x224-resized
+- [3] Raw dataset which the project is based off. Available at: https://challenge2020.isic-archive.com/
+- [4] Dataset used for the model. Available at: https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-224x224-resized
 - [5] Dataset splitting. Available at: https://wiki.cloudfactory.com/docs/mp-wiki/splits/data-splitting-in-machine-learning
 - [6] Weighted Random Sampling. Available at: https://www.researchgate.net/publication/47860855_Weighted_Random_Sampling_over_Data_Streams
 - [7] Data Augmentation applied. Available at: https://www.sciencedirect.com/science/article/pii/S277244252400042X
