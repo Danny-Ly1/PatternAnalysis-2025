@@ -1,3 +1,10 @@
+"""
+Contains the main method to evaluate the model based on the training prior. Also includes a method to
+plot the confusion matrix and ROC curve given the testing results.
+
+Author: Danny Ly
+"""
+
 from dataset import get_data_loaders
 from modules import SiameseNetwork, ContrastiveLoss
 from train import train_loop
@@ -12,6 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_LOAD_PATH = 'best_siamese_model.pth'
 HISTORY_LOAD_PATH = 'training_history.npz'
 
+#---------------------Method To Evaluate The Model------------------------#
 def predict():
     """
     Final evaluation of the model using the best model and best threshold from the training.
@@ -71,6 +79,7 @@ def predict():
     plot_test_metrics(test_labels, test_probas, best_val_thresh)
 
 
+#---------------------Plotting Evaluation Metrics------------------------#
 def plot_test_metrics(all_labels, all_probas, best_thresh):
     """
     Generates a confusion matrix and ROC curve plot with the test results.

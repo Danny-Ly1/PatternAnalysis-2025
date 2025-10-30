@@ -1,3 +1,9 @@
+"""
+Contains methods to train and evaluate the model. Also includes the main training loop and 
+methods to plot the results for each epoch.
+
+Author: Danny Ly
+"""
 from dataset import get_data_loaders
 from modules import SiameseNetwork, ContrastiveLoss
 import torch
@@ -13,7 +19,7 @@ MODEL_SAVE_PATH = 'best_siamese_model.pth'
 HISTORY_SAVE_PATH = 'training_history.npz'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+#---------------------Train and Evaluate Functions------------------------#
 def evaluate(model, loader, criterion):
     """
     Evaluates the model's performance on a given dataset (used for validation and core use in testing).
@@ -114,6 +120,7 @@ def train(model, loader, optimizer, criterion):
 
     return train_loss, train_acc, train_auc
 
+#---------------------Main Training Loop------------------------#
 def train_loop():
     """
     Main loop function that manages all the training for the model.
@@ -184,6 +191,8 @@ def train_loop():
     # Plot the training metrics
     get_train_val_plot()
 
+
+#---------------------Plotting Metric Functions------------------------#
 def plot_metrics(train_metrics, val_metrics, metric_name, title, filename):
     """
     Generates a line graph of the metric across the epochs during training and validation.

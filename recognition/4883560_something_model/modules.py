@@ -1,8 +1,15 @@
+"""
+Contains the source code that creates the Siamese network and the 
+loss function (Contrastive) for the model.
+
+Author: Danny Ly
+"""
+
 import torch.nn as nn
 import torch
 from torchvision import models
 
-
+#---------------------Siamese Network------------------------#
 class SiameseNetwork(nn.Module):
     """
     Creates a siamese network using a resnet-50 CNN as the backbone of the network and a modified head.
@@ -55,6 +62,7 @@ class SiameseNetwork(nn.Module):
         return self.forward_once(x1), self.forward_once(x2)
 
 
+#---------------------Loss Function------------------------#
 class ContrastiveLoss(nn.Module):
     """
     Loss function for training the model.

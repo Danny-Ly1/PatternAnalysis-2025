@@ -1,3 +1,9 @@
+"""
+Contains the appropriate loading process of the data from the ISIC dataset. It also contains the transformers 
+for training and testing and a method to retrieve the data in a data loader class.
+
+Author: Danny Ly
+"""
 import os, random
 import pandas as pd
 from PIL import Image
@@ -6,23 +12,34 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from sklearn.model_selection import train_test_split
 
-# Paths
-image_dir = "/home/Student/s4883560/project/train-image/image"
-metadata_path = "/home/Student/s4883560/project/isic_metadata/train-metadata.csv"
+# Constants
+IMAGE_DIR = "/home/Student/s4883560/project/train-image/image"
+METADATA_PATH = "/home/Student/s4883560/project/isic_metadata/train-metadata.csv"
 
-# Load metadata
-df = pd.read_csv(metadata_path)
-df['image_path'] = df['isic_id'].apply(lambda x: os.path.join(image_dir, f"{x}.jpg"))
+#---------------------Loads data from ISIC dataset------------------------#
+def load_raw_data():
+    """
+    Loads the data from the ISIC dataset into data frames and splits the images into the ratio 70/15/15 where 
+    training is 70, validation is 15, and testing is 15.
 
-# Split
-train_df, temp_df = train_test_split(df, test_size=0.3, stratify=df['target'], random_state=42)
-val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=temp_df['target'], random_state=42)
+    Returns:
+        Training, validation, and testing data frames.
+    """
+    # Load metadata
+    df = pd.read_csv(METADATA_PATH)
+    df['image_path'] = df['isic_id'].apply(lambda x: os.path.join(IMAGE_DIR, f"{x}.jpg"))
 
-print("Train dataset size:", len(train_df))
-print("Validation dataset size:", len(val_df))
-print("Test dataset size:", len(test_df))
+    # Split
+    train_df, temp_df = train_test_split(df, test_size=0.3, stratify=df['target'], random_state=42)
+    val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=temp_df['target'], random_state=42)
 
-# Dataset
+    print("Train dataset size:", len(train_df))
+    print("Validation dataset size:", len(val_df))
+    print("Test dataset size:", len(test_df))
+
+    return train_df, val_df, test_df
+
+#---------------------Dataset------------------------#
 class SiameseISICDataset(Dataset):
     """
     Creates a dataset specifically to return pairs of images. The images will undergo given transforms automatically if given.
@@ -99,6 +116,7 @@ class SiameseISICDataset(Dataset):
         # Return images and their label
         return (img1, img2), torch.tensor(float(label))
 
+#---------------------Functions------------------------#
 def get_transforms():
     """
     Returns: The image transforms for the training and testing.
@@ -128,6 +146,7 @@ def get_data_loaders(batch_size = 32, pairs_per_epoch = 15000):
     Returns: Torch DataLoader objects for training, validation and testing.
     """
     train_transform, test_transform = get_transforms()
+    train_df, val_df, test_df = load_raw_data()
 
     # Create dataloaders from the dataset
     train_dataset = SiameseISICDataset(train_df, train_transform, pairs_per_epoch)
